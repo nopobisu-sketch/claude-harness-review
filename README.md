@@ -42,10 +42,3 @@ CLAUDE_CONFIG_DIR=~/harness-review/harness claude
 rm -rf ~/harness-review
 ```
 
-이 사본에서만 경로를 «설정 폴더 변수가 있으면 그것, 없으면 `~/.claude`»로 바꿨습니다(`hooks/harness-layers.mjs`, `hooks/require-agent-model.mjs`, `hooks/stop-check-gate.mjs`, `settings.json`의 훅 명령). 문서와 안내 문구 속의 `~/.claude` 표기는 원본 그대로입니다. 일부 훅 시험과 도구(`tools/`)는 원본 맥의 폴더 구조(저장소 11곳, 프로젝트 메모리)를 전제로 하므로 이 맥에서는 일부가 실패하거나 빈 결과를 낼 수 있습니다.
-
-## 특히 봐 주셨으면 하는 것
-
-(사용자가 채울 자리)
-
-의견은 사용자에게 직접 전해 주세요. 의견을 거두는 장치는 만들지 않았습니다.
