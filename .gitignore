@@ -1,0 +1,12 @@
+# Claude Code가 설정 폴더에 쓰는 실행 기록(계정 정보·대화 기록)은 올리지 않는다
+harness/.claude.json
+harness/backups/
+harness/projects/
+harness/plugins/
+harness/sessions/
+harness/statsig/
+harness/todos/
+harness/shell-snapshots/
+harness/session-env/
+harness/plans/
+harness/state/

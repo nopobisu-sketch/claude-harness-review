@@ -1,0 +1,499 @@
+<title>하네스 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 레이아웃: floorplan식 무한 캔버스 — 권장안 → 제안 → 전역 층 → 장치 → 저장소가 왼쪽에서 오른쪽으로, 오른쪽에 설명 칸 */
+:root{
+  --bg:#f3f3f1;--grid:#d9d9d4;--card:#ffffff;--card-bd:#e2e2dd;--ink:#1c1c1a;--sub:#5c5c55;--faint:#74746d;
+  --chip:#e8e8e4;--edge:#5a5d63;--sel:#3b6fe0;--sel-soft:rgba(59,111,224,.14);
+  --on:#1d8047;--on-bg:#e3f2e8;--part:#93600a;--part-bg:#fbf0dc;--off:#c63b3b;--off-bg:#fbe5e5;--na:#6c6c66;--na-bg:#ececea;--try:#3b6fe0;--try-bg:#e6eefc;
+  --rec-lane:#fbeee7;--rec-bd:#efd3c4;--rec-ink:#97431f;--prop-lane:#f6f3e6;--prop-bd:#e7e0bf;--prop-ink:#8a6d12;
+  --i-rec:#fdeaea;--i-rec-ink:#c63b3b;--i-prop:#fbf3d6;--i-prop-ink:#9a7a10;--i-g:#e6eefc;--i-g-ink:#3b6fe0;--i-d:#e3f4ef;--i-d-ink:#0b7f6b;--i-t:#fdeee0;--i-t-ink:#b4620c;--i-r:#f3e9fb;--i-r-ink:#8a4fd0;
+  --panel:#ffffff;--input:#f6f6f3;--shadow:0 1px 2px rgba(0,0,0,.05);--shadow-lg:0 14px 36px rgba(0,0,0,.16);
+  --font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Inter","Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121212;--grid:#262626;--card:#1c1c1c;--card-bd:#2e2e2e;--ink:#ececea;--sub:#a3a39c;--faint:#8e8e88;
+  --chip:#2a2a2a;--edge:#8a8d93;--sel:#7aa2ff;--sel-soft:rgba(122,162,255,.18);
+  --badge-ink:#121212;--on:#5fd08f;--on-bg:#173523;--part:#f0b860;--part-bg:#3a2c12;--off:#f19595;--off-bg:#3d1c1c;--na:#9a9a94;--na-bg:#262626;--try:#8fb0ff;--try-bg:#1d2640;
+  --rec-lane:#2a1d17;--rec-bd:#4a2e22;--rec-ink:#f0a582;--prop-lane:#26230f;--prop-bd:#463f1c;--prop-ink:#e3c766;
+  --i-rec:#3d1c1c;--i-rec-ink:#f19595;--i-prop:#3a3214;--i-prop-ink:#e3c766;--i-g:#1d2640;--i-g-ink:#8fb0ff;--i-d:#15322c;--i-d-ink:#63d2b8;--i-t:#3a2614;--i-t-ink:#f0b073;--i-r:#2b1f3a;--i-r-ink:#c9a2f5;
+  --panel:#1a1a1a;--input:#232323;--shadow:0 1px 2px rgba(0,0,0,.4);--shadow-lg:0 14px 36px rgba(0,0,0,.5);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121212;--grid:#262626;--card:#1c1c1c;--card-bd:#2e2e2e;--ink:#ececea;--sub:#a3a39c;--faint:#8e8e88;
+  --chip:#2a2a2a;--edge:#8a8d93;--sel:#7aa2ff;--sel-soft:rgba(122,162,255,.18);
+  --badge-ink:#121212;--on:#5fd08f;--on-bg:#173523;--part:#f0b860;--part-bg:#3a2c12;--off:#f19595;--off-bg:#3d1c1c;--na:#9a9a94;--na-bg:#262626;--try:#8fb0ff;--try-bg:#1d2640;
+  --rec-lane:#2a1d17;--rec-bd:#4a2e22;--rec-ink:#f0a582;--prop-lane:#26230f;--prop-bd:#463f1c;--prop-ink:#e3c766;
+  --i-rec:#3d1c1c;--i-rec-ink:#f19595;--i-prop:#3a3214;--i-prop-ink:#e3c766;--i-g:#1d2640;--i-g-ink:#8fb0ff;--i-d:#15322c;--i-d-ink:#63d2b8;--i-t:#3a2614;--i-t-ink:#f0b073;--i-r:#2b1f3a;--i-r-ink:#c9a2f5;
+  --panel:#1a1a1a;--input:#232323;--shadow:0 1px 2px rgba(0,0,0,.4);--shadow-lg:0 14px 36px rgba(0,0,0,.5);color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.top{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:58px;display:flex;align-items:center;gap:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bg);z-index:20}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;white-space:nowrap}
+.logo svg{width:24px;height:16px}
+.pill{border-radius:8px;padding:4px 9px;font-size:12px;white-space:nowrap;background:var(--chip);color:var(--sub)}
+.pill.fresh{background:var(--on-bg);color:var(--on)}
+.pill.stale{background:var(--na-bg);color:var(--na)}
+.navbtn{padding:6px 8px;border-radius:8px;font-size:13.5px;white-space:nowrap;display:flex;align-items:center;gap:6px;color:var(--ink)}
+.navbtn:hover{background:var(--chip)}
+.badge{border-radius:9px;font-size:11px;padding:1px 6px;color:var(--badge-ink,#fff);background:var(--on)}
+.badge.y{background:var(--part)}
+.search{position:relative;flex:1;max-width:520px;min-width:120px}
+.search input{width:100%;height:36px;border-radius:11px;border:0;background:var(--chip);color:var(--ink);padding:0 36px 0 34px;font:inherit;font-size:13.5px}
+.search .mag{position:absolute;left:12px;top:9px;color:var(--faint)}
+.search kbd{position:absolute;right:10px;top:8px;font-size:11px;background:var(--card);border-radius:5px;padding:1px 6px;color:var(--faint);font-family:var(--font)}
+.dd{position:absolute;top:42px;left:0;right:0;min-width:520px;max-height:min(70vh,620px);overflow:auto;background:var(--panel);border:1px solid var(--card-bd);border-radius:14px;box-shadow:var(--shadow-lg);padding:8px 0;z-index:30}
+.tabs{display:flex;gap:6px;padding:2px 12px 8px;border-bottom:1px solid var(--card-bd);flex-wrap:wrap}
+.tab{padding:4px 10px;border-radius:8px;font-size:12.5px;color:var(--sub)}
+.tab.on{background:var(--ink);color:var(--bg)}
+.tab.rec.on{background:var(--rec-ink);color:#fff}
+.grp{padding:10px 14px 3px;font-size:11px;color:var(--faint);font-weight:700;letter-spacing:.04em}
+.item{display:flex;align-items:center;gap:10px;padding:7px 14px;width:100%;text-align:left}
+.item:hover,.item.hl{background:var(--sel-soft)}
+.item .nm{font-weight:600;font-size:13px}
+.item .meta{font-size:11.5px;color:var(--sub);margin-top:1px}
+.item .r{margin-left:auto;display:flex;gap:6px;align-items:center;flex-shrink:0}
+.item.gone .nm{color:var(--faint);text-decoration:line-through}
+.stage{position:fixed;top:calc(58px + env(safe-area-inset-top,0px));left:0;right:0;bottom:0;overflow:hidden;background-image:radial-gradient(var(--grid) 1px,transparent 1px);background-size:22px 22px;cursor:grab;touch-action:none}
+.stage.drag{cursor:grabbing}
+.world{position:absolute;left:0;top:0;transform-origin:0 0}
+.ov{position:absolute;width:760px}
+.ov .k{font-size:12.5px;color:var(--sub)}
+.ov h1{margin:2px 0 6px;font-size:26px;letter-spacing:-.3px}
+.ov p{margin:0;font-size:13.5px;line-height:1.65;color:var(--sub);max-width:70ch}
+.colh{position:absolute;font-size:11.5px;letter-spacing:.05em;color:var(--faint);font-weight:700}
+.lane{position:absolute;border-radius:16px;border:1px solid}
+.lane.rec{background:var(--rec-lane);border-color:var(--rec-bd)}
+.lane.prop{background:var(--prop-lane);border-color:var(--prop-bd)}
+.lane .foot{position:absolute;left:14px;bottom:10px;font-size:11.5px}
+.lane.rec .foot{color:var(--rec-ink)}.lane.prop .foot{color:var(--prop-ink)}
+.colh.rec{color:var(--rec-ink)}.colh.prop{color:var(--prop-ink)}
+svg.edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.card{position:absolute;background:var(--card);border:1px solid var(--card-bd);border-radius:11px;padding:10px 12px 9px;box-shadow:var(--shadow);cursor:pointer;transition:opacity .15s,box-shadow .15s}
+.card:hover{box-shadow:0 0 0 3px var(--sel-soft)}
+.card.sel{border:1.5px solid var(--sel);box-shadow:0 0 0 4px var(--sel-soft)}
+.card.dim{opacity:.35}
+.ch{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:650;line-height:1.25}
+.ch span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:10.5px;flex-shrink:0}
+.ic.rec{background:var(--i-rec);color:var(--i-rec-ink)}.ic.prop{background:var(--i-prop);color:var(--i-prop-ink)}.ic.global{background:var(--i-g);color:var(--i-g-ink)}.ic.hook,.ic.skill{background:var(--i-d);color:var(--i-d-ink)}.ic.task{background:var(--i-t);color:var(--i-t-ink)}.ic.repo{background:var(--i-r);color:var(--i-r-ink)}
+.sum{font-size:11.5px;color:var(--sub);margin:6px 0 8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:32px}
+.ft{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10.5px;color:var(--faint)}
+.ft .m{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st{display:inline-flex;align-items:center;gap:4px;border-radius:9px;padding:1px 8px;font-size:10.5px;font-weight:650;white-space:nowrap;flex-shrink:0}
+.st::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.st.on{background:var(--on-bg);color:var(--on)}.st.part{background:var(--part-bg);color:var(--part)}.st.off{background:var(--off-bg);color:var(--off)}
+.st.na,.st.old,.st.skip,.st.gone{background:var(--na-bg);color:var(--na)}.st.try{background:var(--try-bg);color:var(--try)}
+.ans{margin-top:8px;display:flex;gap:6px;align-items:center}
+.ans input{flex:1;min-width:0;border:0;border-bottom:1.5px dashed var(--faint);background:transparent;color:var(--ink);font:inherit;font-size:12.5px;padding:3px 2px}
+.ans input::placeholder{color:var(--faint)}
+.ans input.filled{color:var(--sel);font-weight:600;border-bottom-style:solid;border-bottom-color:var(--sel)}
+.ans .saved{font-size:10.5px;color:var(--faint);white-space:nowrap}
+.panel{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));bottom:14px;width:380px;background:var(--panel);border:1px solid var(--card-bd);border-radius:16px;box-shadow:var(--shadow-lg);overflow:auto;z-index:15;padding:20px 22px}
+.panel .kind{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:12.5px}
+.panel h2{font-size:20px;margin:10px 0 8px;line-height:1.35;letter-spacing:-.2px;text-wrap:balance}
+.panel p{margin:10px 0;line-height:1.65;font-size:13.5px}
+.panel h3{font-size:12.5px;margin:18px 0 6px;color:var(--sub);font-weight:700}
+.panel .x{position:absolute;right:14px;top:14px;width:28px;height:28px;border-radius:8px;color:var(--sub)}
+.panel .x:hover{background:var(--chip)}
+.path{background:var(--input);border-radius:9px;padding:9px 12px;font-family:var(--mono);font-size:12px;color:var(--sub);word-break:break-all}
+.row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--card-bd);font-size:13px}
+.row .d{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.row .r{margin-left:auto;color:var(--sub);font-size:12px;text-align:right}
+.row.link{cursor:pointer}.row.link:hover{background:var(--sel-soft)}
+.d.on{background:var(--on)}.d.part{background:var(--part)}.d.off{background:var(--off)}.d.na,.d.old,.d.skip,.d.gone{background:var(--na)}.d.try{background:var(--try)}
+.meta{font-size:12px;color:var(--faint);margin-top:14px;line-height:1.5}
+.panel textarea{width:100%;min-height:70px;border:1px solid var(--card-bd);border-radius:10px;background:var(--input);color:var(--ink);font:inherit;font-size:13.5px;padding:9px 11px;resize:vertical}
+.btn{border-radius:9px;padding:7px 13px;font-size:13px;font-weight:600;background:var(--ink);color:var(--bg)}
+.btn.ghost{background:var(--chip);color:var(--ink)}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.zoom{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:14px;display:flex;gap:2px;background:var(--panel);border:1px solid var(--card-bd);border-radius:12px;padding:4px;z-index:15}
+.zoom button{width:34px;height:30px;border-radius:8px;font-size:16px;color:var(--sub)}
+.zoom button:hover{background:var(--chip)}
+.tour{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:64px;width:min(400px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--card-bd);border-radius:16px;box-shadow:var(--shadow-lg);padding:16px 18px;z-index:25}
+.tour .k{font-size:12px;color:var(--sub)}
+.tour h4{margin:6px 0 6px;font-size:17px}
+.tour p{margin:0 0 12px;font-size:13.5px;line-height:1.6}
+.tour .bar{display:flex;gap:4px;align-items:center}
+.tour .bar i{height:3px;width:18px;border-radius:2px;background:var(--card-bd)}
+.tour .bar i.on{background:var(--ink)}
+.tour .bar .sp{flex:1}
+.flows{position:absolute;top:44px;right:0;width:330px;background:var(--panel);border:1px solid var(--card-bd);border-radius:14px;box-shadow:var(--shadow-lg);padding:8px;z-index:30}
+.flows button{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:9px}
+.flows button:hover{background:var(--sel-soft)}
+.flows b{font-size:13.5px}.flows span{display:block;font-size:12px;color:var(--sub);margin-top:2px}
+.rel{position:relative}
+.empty{position:fixed;inset:58px 0 0 0;display:grid;place-items:center;z-index:10;pointer-events:none}
+.empty div{background:var(--panel);border:1px solid var(--card-bd);border-radius:16px;padding:22px 26px;max-width:460px;line-height:1.65;pointer-events:auto}
+.empty code{font-family:var(--mono);font-size:12px;background:var(--input);padding:1px 5px;border-radius:5px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:8px}
+@media (max-width:900px){.panel{width:auto;left:max(14px,env(safe-area-inset-left,0px));top:auto;height:52vh}.navbtn .lb{display:none}.dd{min-width:0}}
+@media (prefers-reduced-motion:reduce){.card{transition:none}}
+</style>
+
+<header class="top">
+  <div class="logo"><svg viewBox="0 0 24 16" aria-hidden="true"><path d="M2 2h7l4 6-4 6H2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M13 8h9M18 3.5 22.5 8 18 12.5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>하네스 지도</div>
+  <span class="pill" id="pill">불러오는 중</span>
+  <button class="navbtn" id="btnOverview">Overview</button>
+  <div class="search">
+    <span class="mag">⌕</span>
+    <input id="q" type="search" placeholder="장치, 저장소, 권장안, 제안 찾기" autocomplete="off" aria-label="찾기">
+    <kbd>/</kbd>
+    <div class="dd" id="dd" hidden></div>
+  </div>
+  <button class="navbtn" id="btnTheme" title="밝게·어둡게">◐</button>
+  <button class="navbtn" id="btnRecent"><span class="lb">최근 바뀐 것</span><span class="badge" id="bRecent">0</span></button>
+  <button class="navbtn" id="btnProps"><span class="lb">고를 제안</span><span class="badge y" id="bProps">0</span></button>
+  <button class="navbtn" id="btnTour"><span class="lb">Start here</span></button>
+  <div class="rel"><button class="navbtn" id="btnFlows">▷ <span class="lb">Flows</span></button><div class="flows" id="flows" hidden></div></div>
+</header>
+
+<main class="stage" id="stage"><div class="world" id="world"></div></main>
+<aside class="panel" id="panel" aria-live="polite"></aside>
+<div class="zoom"><button id="zOut" aria-label="축소">−</button><button id="zFit" aria-label="전체 보기">⛶</button><button id="zIn" aria-label="확대">+</button></div>
+<div class="tour" id="tour" hidden></div>
+<div class="empty" id="empty" hidden><div id="emptyMsg"></div></div>
+
+<script>
+(function(){
+'use strict';
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>String(s??'').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(iso)=>{if(!iso)return '-';const d=new Date(iso);if(isNaN(d))return String(iso).slice(0,16);const p=(n)=>String(n).padStart(2,'0');return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;};
+const ST_TEXT={on:'켜짐',part:'일부',off:'꺼짐',na:'해당 없음',old:'오래됨',skip:'안 하기로 함',gone:'낡음',try:'시험'};
+const chip=(st,text)=>`<span class="st ${esc(st)}">${esc(text||ST_TEXT[st]||st)}</span>`;
+const ICON={rec:'▶',prop:'✎',global:'◆',hook:'⚙',skill:'❖',task:'⏱',repo:'▣'};
+
+/* ── 상태 ── */
+const S={snap:null,repos:{},recs:{},props:{},db:null,user:null,sel:null,flow:null,canWrite:true};
+const COL={rec:40,prop:350,global:660,device:970,repo:1280};
+const CW=270,CH=104,PH=150,GAP=16,TOP=230;
+let layout={nodes:{},edges:[],w:1600,h:1200};
+
+/* ── 테마 ── */
+try{const t=localStorage.getItem('hm-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+$('btnTheme').onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('hm-theme',r.dataset.theme);}catch(e){}};
+
+/* ── 상태 계산 ── */
+const stale=()=>{if(!S.snap)return false;const d=(Date.now()-Date.parse(S.snap.measuredAt))/864e5;return d>(S.snap.staleDays||3);};
+const measured=(st,text)=>stale()?{st:'old',text:'오래됨'}:{st,text};
+const propsByRec=(rid)=>Object.values(S.props).filter((p)=>p.recId===rid);
+function recStatus(r){
+  if(r.state==='대체됨')return{st:'gone',text:'대체됨'};
+  if(r.state==='버림')return{st:'gone',text:'버림'};
+  if(propsByRec(r.id).some((p)=>p.state==='안 함'))return{st:'skip',text:'안 하기로 함'};
+  const m=S.snap?.metrics?.[r.metric];
+  if(!m)return{st:'na',text:'실측 없음'};
+  if(r.state==='시험')return measured('try',m.status==='on'?'시험 · 반영됨':'시험 중');
+  const t={on:'반영됨',part:'일부',off:'안 됨',na:'해당 없음'}[m.status]||m.status;
+  return measured(m.status,t);
+}
+const PROP_ST={'고를 것':'part','하자':'on','진행 중':'on','보류':'na','안 함':'skip','끝남':'gone'};
+function parseAnswer(a){const s=(a||'').trim();if(/^하자|^ㅇ|^좋아/.test(s))return '하자';if(/^보류/.test(s))return '보류';if(/^안\s?함|^안해|^하지\s?마/.test(s))return '안 함';return null;}
+const LANE_PROP=['고를 것','하자','진행 중'];
+const laneProps=()=>Object.values(S.props).filter((p)=>LANE_PROP.includes(p.state)).sort((a,b)=>(a.state==='고를 것'?0:1)-(b.state==='고를 것'?0:1)||(a.order??99)-(b.order??99));
+const liveProps=()=>Object.values(S.props).filter((p)=>p.state!=='끝남').sort((a,b)=>(a.state==='고를 것'?0:1)-(b.state==='고를 것'?0:1)||(a.order??99)-(b.order??99));
+const needAnswer=()=>Object.values(S.props).filter((p)=>p.state==='고를 것'&&!(p.answer||'').trim());
+const currentRecs=()=>Object.values(S.recs).filter((r)=>r.state==='현행'||r.state==='시험').sort((a,b)=>(a.order??99)-(b.order??99));
+
+/* ── 배치 ── */
+function buildLayout(){
+  const n={},edges=[];const sn=S.snap;
+  const place=(col,list,h,kind)=>list.forEach((x,i)=>{n[x.id]={...x,_kind:kind,x:COL[col],y:TOP+i*(h+GAP),w:CW,h};});
+  const recs=currentRecs();const props=laneProps();
+  place('rec',recs.map((r)=>({...r,id:'rec:'+r.id,ref:r})),CH,'rec');
+  place('prop',props.map((p)=>({...p,id:'prop:'+p.id,ref:p})),PH,'prop');
+  if(sn){
+    place('global',sn.global||[],CH,'global');
+    place('device',sn.devices||[],CH,'device');
+    const repos=(sn.repoOrder||Object.keys(S.repos)).map((s)=>S.repos[s]).filter(Boolean);
+    place('repo',repos.map((r)=>({...r,id:'repo:'+r.slug})),CH,'repo');
+    for(const d of sn.devices||[]){
+      for(const g of d.links||[])if(n[g])edges.push({a:g,b:d.id});
+      if(d.perRepo)for(const r of repos){const c=r.checks?.[d.id];edges.push({a:d.id,b:'repo:'+r.slug,st:c?c.status:'na'});}
+    }
+  }
+  for(const r of recs)for(const t of r.links||[])if(n[t])edges.push({a:'rec:'+r.id,b:t,rec:true});
+  for(const p of props){
+    if(p.recId&&n['rec:'+p.recId])edges.push({a:'rec:'+p.recId,b:'prop:'+p.id});
+    for(const t of p.links||[])if(n[t])edges.push({a:'prop:'+p.id,b:t});
+  }
+  const bottom=Math.max(TOP+400,...Object.values(n).map((x)=>x.y+x.h))+60;
+  layout={nodes:n,edges,w:COL.repo+CW+80,h:bottom,recs,props};
+}
+
+function cardHTML(x){
+  const k=x._kind;let icon=ICON[k]||'•',ic=k,title=x.label||x.title||x.name,sum=x.summary||'',meta='',st,stx;
+  if(k==='rec'){const s=recStatus(x.ref);st=s.st;stx=s.text;meta=[x.ref.source,x.ref.date].filter(Boolean).join(' · ');}
+  else if(k==='prop'){st=PROP_ST[x.ref.state]||'na';stx=x.ref.state;if((x.ref.state==='고를 것'||x.ref.state==='보류')&&(x.ref.answer||'').trim()&&!parseAnswer(x.ref.answer)&&!(x.ref.result||'').trim()){st='try';stx='물음 받음';}
+    else if(x.ref.state==='고를 것'&&!(x.ref.answer||'').trim()&&x.ref.reaskedAt){st='part';stx='다시 물음';}meta=x.ref.from?.repo?`프로젝트 건의 · ${x.ref.from.repo} · ${x.ref.date||''}`:x.ref.recId?`권장안에서 · ${x.ref.date||''}`:`겪은 일에서 · ${x.ref.date||''}`;}
+  else if(k==='device'){icon=ICON[x.kind]||'⚙';ic=x.kind;const s=measured(x.status,x.statusText);st=s.st;stx=s.text;meta=x.event||x.path;}
+  else if(k==='global'){const s=measured(x.status,x.statusText);st=s.st;stx=s.text;meta=x.path;}
+  else if(k==='repo'){title=x.name;sum=x.statusText;const s=measured(x.status,x.status==='on'?'이상 없음':'볼 것 있음');st=s.st;stx=s.text;meta=`실측 ${fmt(x.measuredAt).slice(0,5)}`;}
+  let h=`<div class="ch"><span class="ic ${esc(ic)}">${icon}</span><span class="t">${esc(title)}</span></div><div class="sum">${esc(sum)}</div><div class="ft"><span class="m">${esc(meta)}</span>${chip(st,stx)}</div>`;
+  if(k==='prop'){const a=x.ref.answer||'';h+=`<div class="ans"><input data-prop="${esc(x.ref.id)}" class="${a?'filled':''}" value="${esc(a)}" placeholder="하자 / 보류 / 안 함" aria-label="${esc(title)} 답칸"${S.canWrite?'':' disabled'}><span class="saved" id="sv-${esc(x.ref.id)}"></span></div>`;}
+  return h;
+}
+
+function render(){
+  buildLayout();
+  const W=$('world');const L=layout;W.innerHTML='';
+  W.style.width=L.w+'px';W.style.height=L.h+'px';
+  const ov=document.createElement('div');ov.className='ov';ov.style.left=COL.rec+'px';ov.style.top='20px';
+  const sn=S.snap;
+  ov.innerHTML=`<div class="k">Overview</div><h1>하네스 지도</h1><p>전역 하네스(~/.claude)에서 고른 방식이 장치를 거쳐 저장소 ${sn?.repoOrder?.length??0}곳에 닿는 모습입니다. 모든 상태는 점검 도구가 잰 값이고, ${sn?`마지막 실측은 ${fmt(sn.measuredAt)}입니다.`:'아직 실측이 들어오지 않았습니다.'} 권장안은 현행만 지도 색에 셉니다.</p>`;
+  W.appendChild(ov);
+  const lane=(cls,col,list,label,foot)=>{const hh=Math.max(list.length,1)*((cls==='prop'?PH:CH)+GAP)+70;const d=document.createElement('div');d.className='lane '+cls;Object.assign(d.style,{left:(COL[col]-14)+'px',top:(TOP-44)+'px',width:(CW+28)+'px',height:hh+'px'});d.innerHTML=`<span class="foot">${esc(foot)}</span>`;W.appendChild(d);head(col,label,cls);};
+  const head=(col,label,cls='')=>{const h=document.createElement('div');h.className='colh '+cls;h.style.left=COL[col]+'px';h.style.top=(TOP-30)+'px';h.textContent=label;W.appendChild(h);};
+  const oldCount=Object.values(S.recs).length-L.recs.length;
+  lane('rec','rec',L.recs,'권장안 · 현행',oldCount?`낡은 ${oldCount}개는 숨김 · 검색창 «권장안»에서 보기`:'현행만 지도 색에 셉니다');
+  const hiddenProps=Object.values(S.props).filter((p)=>!LANE_PROP.includes(p.state)&&p.state!=='끝남').length;
+  lane('prop','prop',L.props,'고를 제안 · 진행 중',`답 기다림 ${needAnswer().length}${hiddenProps?` · 보류·안 함 ${hiddenProps}개는 검색창 «제안»에서`:''}`);
+  head('global','전역 층');head('device','장치');head('repo','저장소');
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','edges');svg.setAttribute('width',L.w);svg.setAttribute('height',L.h);
+  W.appendChild(svg);
+  for(const x of Object.values(L.nodes)){
+    const c=document.createElement('div');c.className='card';c.dataset.id=x.id;
+    Object.assign(c.style,{left:x.x+'px',top:x.y+'px',width:x.w+'px',height:x.h+'px'});
+    c.innerHTML=cardHTML(x);W.appendChild(c);
+  }
+  drawEdges();applySel();
+  $('bRecent').textContent=(sn?.recent||[]).filter((r)=>Date.now()-Date.parse(r.date)<(sn.staleDays||3)*864e5).length;$('bProps').textContent=needAnswer().length;
+  const pill=$('pill');
+  if(sn){pill.textContent=`${stale()?'오래됨 · ':'● '}실측 ${fmt(sn.measuredAt)}`;pill.className='pill '+(stale()?'stale':'fresh');}
+  if(!S.sel)showOverview();else showPanel(S.sel);
+}
+
+function related(id){
+  const set=new Set([id]);for(const e of layout.edges){if(e.a===id)set.add(e.b);if(e.b===id)set.add(e.a);}
+  return set;
+}
+function drawEdges(){
+  const svg=document.querySelector('svg.edges');if(!svg)return;const N=layout.nodes;let s='';
+  const focus=S.flow?new Set(S.flow):S.sel?related(S.sel):null;
+  for(const e of layout.edges){
+    const A=N[e.a],B=N[e.b];if(!A||!B)continue;
+    const ax=A.x+A.w,ay=A.y+A.h/2,bx=B.x,by=B.y+B.h/2;const mx=ax+28;
+    const on=focus?(focus.has(e.a)&&focus.has(e.b)&&(S.flow||e.a===S.sel||e.b===S.sel)):false;
+    const dimmed=focus&&!on;
+    let col='var(--edge)',dash='',w=1.3,op=dimmed?.12:.55;
+    if(e.st==='off'){col='var(--off)';dash='5 4';}else if(e.st==='part'){col='var(--part)';dash='5 4';}else if(e.st==='na'){col='var(--na)';dash='3 4';op=dimmed?.08:.35;}
+    if(on){op=1;w=1.9;if(!e.st||e.st==='on')col='var(--sel)';}
+    const r=6,dy=by>ay?1:by<ay?-1:0;
+    const d=dy===0?`M${ax},${ay} H${bx}`:`M${ax},${ay} H${mx-r} Q${mx},${ay} ${mx},${ay+dy*r} V${by-dy*r} Q${mx},${by} ${mx+r},${by} H${bx}`;
+    s+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-dasharray="${dash}" opacity="${op}"/><circle cx="${ax}" cy="${ay}" r="2.6" fill="var(--card)" stroke="${col}" opacity="${op}"/><circle cx="${bx}" cy="${by}" r="2.6" fill="var(--card)" stroke="${col}" opacity="${op}"/>`;
+  }
+  svg.innerHTML=s;
+}
+function applySel(){
+  const focus=S.flow?new Set(S.flow):S.sel?related(S.sel):null;
+  document.querySelectorAll('.card').forEach((c)=>{c.classList.toggle('sel',c.dataset.id===S.sel);c.classList.toggle('dim',!!focus&&!focus.has(c.dataset.id));});
+}
+
+/* ── 설명 칸 ── */
+const P=$('panel');
+const closeBtn='<button class="x" id="pClose" aria-label="닫기">✕</button>';
+function bindPanel(){const x=$('pClose');if(x)x.onclick=()=>select(null);P.querySelectorAll('[data-go]').forEach((el)=>el.onclick=()=>select(el.dataset.go,true));}
+const rowsFor=(entries)=>entries.map(([name,st,text,go])=>`<div class="row${go?' link':''}"${go?` data-go="${esc(go)}"`:''}><span class="d ${esc(st)}"></span>${esc(name)}<span class="r">${esc(text)}</span></div>`).join('');
+function repoRows(fn){return (S.snap?.repoOrder||[]).map((slug)=>{const r=S.repos[slug];if(!r)return null;const c=fn(r)||{status:'na',text:'-'};return [r.name,stale()?'old':c.status,c.text,'repo:'+slug];}).filter(Boolean);}
+function recsLinking(id){return Object.values(S.recs).filter((r)=>(r.links||[]).includes(id));}
+
+function showOverview(){
+  const sn=S.snap;const N=Object.values(layout.nodes);
+  const cnt=(st)=>N.filter((x)=>x._kind!=='prop'&&x._kind!=='rec'&&x.status===st).length;
+  const pend=(sn?.handoffs||[]).filter((h)=>!h.done);
+  P.innerHTML=`<div class="kind">Overview</div><h2>지금 하네스 상태</h2>
+  ${sn?`<p>${stale()?'<b>실측이 '+(sn.staleDays||3)+'일을 넘었습니다.</b> 지도의 색은 오래된 값일 수 있습니다. ':''}전역 층 ${sn.global.length}개, 장치 ${sn.devices.length}개, 저장소 ${sn.repoOrder.length}곳을 ${fmt(sn.measuredAt)}에 쟀습니다.</p>
+  <div class="legend">${chip('on',`켜짐 ${cnt('on')}`)}${chip('part',`일부 ${cnt('part')}`)}${chip('off',`꺼짐 ${cnt('off')}`)}${chip('na','해당 없음')}${chip('old','오래됨')}${chip('skip','안 하기로 함')}</div>
+  <h3>답을 기다리는 제안 ${needAnswer().length}</h3>${rowsFor(needAnswer().map((p)=>[p.title,'part','답칸 비어 있음','prop:'+p.id]))||'<p class="meta">없음</p>'}
+  <h3>저장소에 넘길 것 ${pend.length}</h3>${rowsFor(pend.map((h)=>[`[${h.id}] ${h.text.slice(0,40)}…`,'part',h.scope]))||'<p class="meta">없음</p>'}
+  <div class="meta">상태는 tools/harness-map.mjs가 잰 값입니다. 전역 하네스를 바꾼 세션은 이 지도를 고쳐 쓰기 전에 턴을 끝내지 못하고, 3일마다 예약 작업이 전부 다시 잽니다.</div>`
+  :'<p>아직 실측이 없습니다.</p>'}`;
+  bindPanel();
+}
+
+function showPanel(id){
+  const x=layout.nodes[id];
+  if(!x){const rid=id.startsWith('rec:')?id.slice(4):null;if(rid&&S.recs[rid])return recPanel({...S.recs[rid],id:rid},true);showOverview();return;}
+  const k=x._kind;
+  if(k==='rec')return recPanel(x.ref);
+  if(k==='prop')return propPanel(x.ref);
+  let h=closeBtn;
+  if(k==='global'||k==='device'){
+    const s=measured(x.status,x.statusText);
+    h+=`<div class="kind"><span class="ic ${esc(k==='device'?x.kind:'global')}">${k==='device'?ICON[x.kind]:ICON.global}</span>${k==='global'?'전역 층':`장치 · ${esc(x.event||'')}`}</div><h2>${esc(x.label)}</h2>${chip(s.st,s.text)}<p>${esc(x.summary)}</p><div class="path">${esc(x.path)}</div>`;
+    if(x.facts?.length)h+=`<h3>실측</h3>${rowsFor(x.facts.map(([a,b])=>[a,'na',String(b)]))}`;
+    if(x.perRepo)h+=`<h3>저장소별</h3>${rowsFor(repoRows((r)=>r.checks?.[x.id]))}`;
+    const rl=recsLinking(x.id);if(rl.length)h+=`<h3>이 장치가 맡은 권장안</h3>${rowsFor(rl.map((r)=>{const s=recStatus(r);return [r.title,s.st,s.text,'rec:'+r.id];}))}`;
+    h+=`<div class="meta">실측 ${fmt(S.snap?.measuredAt)}</div>`;
+  }else if(k==='repo'){
+    const s=measured(x.status,x.statusText);
+    h+=`<div class="kind"><span class="ic repo">${ICON.repo}</span>저장소</div><h2>${esc(x.name)}</h2>${chip(s.st,s.text)}<div class="path" style="margin-top:12px">${esc(x.path)}</div>`;
+    h+=`<h3>장치별</h3>${rowsFor(Object.entries(x.checks||{}).map(([d,c])=>{const dn=layout.nodes[d];return [dn?.label||d,stale()?'old':c.status,c.text,d];}))}`;
+    h+=`<h3>전역과 다르게 하는 것 ${x.overrides?.length||0}</h3>${(x.overrides||[]).map((o)=>`<div class="row">${esc(o.replace(/\[([^\]]+)\]\([^)]+\)/g,'$1'))}</div>`).join('')||'<p class="meta">없음 · 전역 규칙 그대로</p>'}`;
+    h+=`<h3>정리할 것 ${x.pending?.length||0}</h3>${(x.pending||[]).map((p)=>`<div class="row"><span class="d part"></span>${esc(p.text)}</div>`).join('')||'<p class="meta">없음</p>'}`;
+    const f=x.facts||{},se=x.sessions||{};
+    h+=`<h3>실측</h3>${rowsFor([['지시문(CLAUDE.md+AGENTS.md)',f.instrLines>200?'part':'on',`${f.instrLines}줄 · 강조어 ${f.emphasis}`],['프로젝트 메모리','na',`${f.memFiles}개`],['최근 세션','na',`${se.sessions}개 · 시작 요약 ${se.brief}/${se.briefEligible}`],['마지막 정리','na',x.lastUpkeep?fmt(x.lastUpkeep):'없음']])}`;
+    h+=`<div class="meta">실측 ${fmt(x.measuredAt)}</div>`;
+  }
+  P.innerHTML=h;bindPanel();
+}
+
+function recPanel(r,hidden){
+  const s=recStatus(r);const m=S.snap?.metrics?.[r.metric];
+  let h=closeBtn+`<div class="kind"><span class="ic rec">${ICON.rec}</span>권장안 · ${esc(r.state)}</div><h2>${esc(r.title)}</h2>${chip(s.st,s.text)}<p>${esc(r.summary||'')}</p>`;
+  if(r.state==='대체됨'||r.state==='버림')h+=`<p><b>${esc(r.state)}:</b> ${esc(r.reason||'')}${r.replacedBy&&S.recs[r.replacedBy]?` → <a href="#" data-go="rec:${esc(r.replacedBy)}">${esc(S.recs[r.replacedBy].title)}</a>`:''}</p>`;
+  if(m&&r.state!=='대체됨'&&r.state!=='버림'){h+=`<h3>실측</h3><div class="row"><span class="d ${esc(m.status)}"></span>${esc(m.text)}</div>`;if(m.perRepo)h+=`<h3>저장소별 반영</h3>${rowsFor(repoRows((rp)=>m.perRepo[rp.slug]))}`;}
+  const links=(r.links||[]).map((id)=>layout.nodes[id]).filter(Boolean);
+  if(links.length)h+=`<h3>맡은 장치·전역 층</h3>${rowsFor(links.map((n)=>{const q=measured(n.status,n.statusText);return [n.label,q.st,q.text,n.id];}))}`;
+  const ps=propsByRec(r.id);if(ps.length)h+=`<h3>이 권장안에서 나온 제안</h3>${rowsFor(ps.map((p)=>[p.title,PROP_ST[p.state]||'na',p.state,'prop:'+p.id]))}`;
+  h+=`<div class="meta">출처 ${r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.source||r.url)}</a>`:esc(r.source||'-')} · ${esc(r.date||'')}${hidden?' · 낡은 권장안이라 지도에는 없습니다':''}</div>`;
+  P.innerHTML=h;bindPanel();
+  P.querySelectorAll('a[data-go]').forEach((a)=>a.onclick=(e)=>{e.preventDefault();select(a.dataset.go,true);});
+}
+
+function propPanel(p){
+  const st=PROP_ST[p.state]||'na';
+  let h=closeBtn+`<div class="kind"><span class="ic prop">${ICON.prop}</span>제안 · ${esc(p.id)}</div><h2>${esc(p.title)}</h2>${chip(st,p.state)}<p>${esc(p.summary||'')}</p>`;
+  if(p.reaskedAt&&(p.feedback||[]).length)h+=`<h3>지난 답 · 그래서 보완함</h3>${(p.feedback||[]).map((f)=>`<div class="row"><span class="d try"></span>${esc(f.text)}<span class="r">${esc(fmt(f.at))}</span></div>`).join('')}${p.result?`<p>${esc(p.result)}</p>`:''}`;
+  if(p.from?.repo)h+=`<h3>프로젝트 건의</h3><p>${esc(p.from.repo)}의 건의 ${esc(String(p.from.n??''))}번 · <span class="meta" style="margin:0">${esc(p.from.file||'')}</span></p>`;
+  if(p.why)h+=`<h3>왜</h3><p>${esc(p.why)}</p>`;
+  if(p.change)h+=`<h3>무엇을 바꾸나</h3><p>${esc(p.change)}</p>`;
+  if(p.caveat)h+=`<h3>덧붙임</h3><p>${esc(p.caveat)}</p>`;
+  if(p.cost)h+=`<h3>비용</h3><p>${esc(p.cost)}</p>`;
+  if(p.recId&&S.recs[p.recId])h+=`<h3>나온 권장안</h3>${rowsFor([[S.recs[p.recId].title,recStatus(S.recs[p.recId]).st,recStatus(S.recs[p.recId]).text,'rec:'+p.recId]])}`;
+  h+=`<h3>답칸</h3><div class="quick">${['하자','보류','안 함'].map((q)=>`<button class="btn ghost" data-q="${q}">${q}</button>`).join('')}</div><textarea id="pAns" placeholder="하자 / 보류 / 안 함 · 조건이 있으면 이어서 적기"${S.canWrite?'':' disabled'}>${esc(p.answer||'')}</textarea><div style="display:flex;gap:8px;align-items:center;margin-top:8px"><button class="btn" id="pSave"${S.canWrite?'':' disabled'}>저장</button><span class="meta" id="pMsg" style="margin:0">${p.answeredAt?`${fmt(p.answeredAt)}에 적음`:''}</span></div>`;
+  if(p.result&&!p.reaskedAt)h+=`<h3>결과</h3><p>${esc(p.result)}</p>`;
+  h+=`<div class="meta">${esc(p.date||'')}${p.source?' · '+esc(p.source):''}</div>`;
+  P.innerHTML=h;bindPanel();
+  P.querySelectorAll('[data-q]').forEach((b)=>b.onclick=()=>{const t=$('pAns');t.value=b.dataset.q+(t.value.replace(/^(하자|보류|안\s?함)\s*[—-]?\s*/,'')?' — '+t.value.replace(/^(하자|보류|안\s?함)\s*[—-]?\s*/,''):'');});
+  $('pSave').onclick=()=>saveAnswer(p.id,$('pAns').value,$('pMsg'));
+}
+
+async function saveAnswer(id,value,msgEl){
+  const p=S.props[id];if(!p)return;const v=value.trim();
+  if(v===(p.answer||'').trim()){if(msgEl)msgEl.textContent='바뀐 것 없음';return;}
+  if(!S.db){if(msgEl)msgEl.textContent='저장할 수 없는 화면입니다';return;}
+  const parsed=parseAnswer(v);const patch={answer:v,answeredAt:new Date().toISOString()};
+  if(parsed&&(p.state==='고를 것'||p.state==='보류'))patch.state=parsed==='하자'?'하자':parsed;
+  if(!v&&p.state!=='고를 것'&&p.state!=='진행 중')patch.state='고를 것';
+  if(msgEl)msgEl.textContent='저장 중…';
+  try{await S.db.doc('proposals/'+id).update(patch);if(msgEl)msgEl.textContent='저장했습니다';}
+  catch(e){if(msgEl)msgEl.textContent=e&&e.code==='invalid_argument'?'이 화면에서는 고칠 수 없습니다':'저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요';if(e&&e.code==='invalid_argument'){S.canWrite=false;}}
+}
+
+/* 카드 답칸: 엔터나 칸을 떠날 때 저장 */
+$('world').addEventListener('keydown',(e)=>{if(e.target.matches('.ans input')&&e.key==='Enter'){e.preventDefault();e.target.blur();}});
+$('world').addEventListener('focusout',(e)=>{if(e.target.matches('.ans input')){const id=e.target.dataset.prop;saveAnswer(id,e.target.value,$('sv-'+id));}});
+$('world').addEventListener('pointerdown',(e)=>{if(e.target.closest('.ans'))e.stopPropagation();},true);
+
+/* ── 선택·이동 ── */
+function select(id,pan){
+  S.flow=null;S.sel=id;applySel();drawEdges();
+  if(id)showPanel(id);else showOverview();
+  if(id&&pan)panTo(id);
+}
+$('world').addEventListener('click',(e)=>{if(e.target.closest('.ans'))return;const c=e.target.closest('.card');if(c)select(c.dataset.id===S.sel?null:c.dataset.id);});
+
+/* ── 확대·이동 ── */
+const V={x:0,y:0,k:1};const world=$('world'),stage=$('stage');
+const applyV=()=>{world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.k})`;};
+function fit(all){const r=stage.getBoundingClientRect();const pw=window.innerWidth>900?400:0;const kw=(r.width-pw-40)/layout.w,kh=(r.height-30)/layout.h;const k=all?Math.min(kw,kh,1.1):Math.min(Math.max(Math.min(kw,kh),.72),kw,1.1);V.k=Math.max(.25,k);V.x=20;V.y=10;applyV();}
+function zoomAt(f,cx,cy){const k=Math.min(2.2,Math.max(.25,V.k*f));V.x=cx-(cx-V.x)*(k/V.k);V.y=cy-(cy-V.y)*(k/V.k);V.k=k;applyV();}
+function panTo(id){const n=layout.nodes[id];if(!n)return;const r=stage.getBoundingClientRect();const pw=window.innerWidth>900?400:0;V.x=(r.width-pw)/2-(n.x+n.w/2)*V.k;V.y=r.height/2-(n.y+n.h/2)*V.k;applyV();}
+$('zIn').onclick=()=>{const r=stage.getBoundingClientRect();zoomAt(1.2,r.width/2,r.height/2);};
+$('zOut').onclick=()=>{const r=stage.getBoundingClientRect();zoomAt(1/1.2,r.width/2,r.height/2);};
+$('zFit').onclick=()=>fit(true);
+stage.addEventListener('wheel',(e)=>{e.preventDefault();const r=stage.getBoundingClientRect();if(e.ctrlKey||e.metaKey)zoomAt(Math.exp(-e.deltaY*0.01),e.clientX-r.left,e.clientY-r.top);else{V.x-=e.deltaX;V.y-=e.deltaY;applyV();}},{passive:false});
+let drag=null;
+stage.addEventListener('pointerdown',(e)=>{if(e.target.closest('.card,input,textarea,button'))return;drag={x:e.clientX,y:e.clientY,vx:V.x,vy:V.y,moved:false};stage.classList.add('drag');stage.setPointerCapture(e.pointerId);});
+stage.addEventListener('pointermove',(e)=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;V.x=drag.vx+dx;V.y=drag.vy+dy;applyV();});
+stage.addEventListener('pointerup',(e)=>{if(drag&&!drag.moved&&!e.target.closest('.card'))select(null);drag=null;stage.classList.remove('drag');});
+
+/* ── 찾기 ── */
+const q=$('q'),dd=$('dd');let tab='전체',hlIdx=0,items=[];
+const TABS=['전체','장치','저장소','권장안','제안'];
+function searchItems(){
+  const t=q.value.trim().toLowerCase();const out=[];const N=layout.nodes;
+  const ok=(s)=>!t||String(s||'').toLowerCase().includes(t);
+  if(tab==='권장안'||tab==='전체'){
+    const groups=[['현행',['현행']],['시험 중',['시험']],['낡음 · 지도 색에 안 셈',['대체됨','버림']]];
+    for(const [g,states] of groups){const list=Object.values(S.recs).filter((r)=>states.includes(r.state)&&(ok(r.title)||ok(r.source)||ok(r.summary))).sort((a,b)=>(a.order??99)-(b.order??99));
+      if(!list.length)continue;if(tab==='권장안')out.push({grp:`${g} ${list.length}`});
+      for(const r of list){const s=recStatus(r);out.push({id:'rec:'+r.id,nm:r.title,meta:r.state==='대체됨'&&r.replacedBy&&S.recs[r.replacedBy]?`대체됨 → ${S.recs[r.replacedBy].title}`:[r.source,r.date].filter(Boolean).join(' · '),st:s.st,stx:s.text,gone:states.includes('버림')||states.includes('대체됨'),icon:'rec'});}}
+  }
+  if(tab==='제안'||tab==='전체'){const list=Object.values(S.props).filter((p)=>ok(p.title)||ok(p.summary)||ok(p.id));if(tab==='제안'&&list.length)out.push({grp:`제안 ${list.length}`});for(const p of list)out.push({id:'prop:'+p.id,nm:p.title,meta:`${p.id} · ${p.answer?'답: '+p.answer:'답칸 비어 있음'}`,st:PROP_ST[p.state]||'na',stx:p.state,gone:p.state==='끝남',icon:'prop'});}
+  if(tab==='장치'||tab==='전체'){for(const x of Object.values(N).filter((x)=>(x._kind==='device'||x._kind==='global')&&(ok(x.label)||ok(x.summary)||ok(x.path)))){const s=measured(x.status,x.statusText);out.push({id:x.id,nm:x.label,meta:x._kind==='global'?`전역 층 · ${x.path}`:x.event,st:s.st,stx:s.text,icon:x._kind==='global'?'global':x.kind});}}
+  if(tab==='저장소'||tab==='전체'){for(const x of Object.values(N).filter((x)=>x._kind==='repo'&&(ok(x.name)||ok(x.statusText)))){const s=measured(x.status,x.status==='on'?'이상 없음':'볼 것 있음');out.push({id:x.id,nm:x.name,meta:x.statusText,st:s.st,stx:s.text,icon:'repo'});}}
+  return out;
+}
+function drawDD(){
+  if(/^권장/.test(q.value.trim())&&tab!=='권장안'){tab='권장안';q.value='';}
+  items=searchItems();const sel=items.filter((i)=>i.id);hlIdx=Math.min(hlIdx,Math.max(0,sel.length-1));let n=-1;
+  dd.innerHTML=`<div class="tabs">${TABS.map((t)=>`<button class="tab${t===tab?' on':''}${t==='권장안'?' rec':''}" data-tab="${t}">${t}${t==='권장안'?' '+Object.keys(S.recs).length:''}</button>`).join('')}</div>`+
+    (items.length?items.map((i)=>i.grp?`<div class="grp">${esc(i.grp)}</div>`:(n++,`<button class="item${i.gone?' gone':''}${n===hlIdx?' hl':''}" data-id="${esc(i.id)}"><span class="ic ${esc(i.icon)}">${ICON[i.icon]||'•'}</span><span style="min-width:0"><div class="nm">${esc(i.nm)}</div><div class="meta">${esc(i.meta||'')}</div></span><span class="r">${chip(i.st,i.stx)}</span></button>`)).join(''):'<div class="grp">맞는 것이 없습니다</div>');
+  dd.querySelectorAll('[data-tab]').forEach((b)=>b.onmousedown=(e)=>{e.preventDefault();tab=b.dataset.tab;hlIdx=0;drawDD();});
+  dd.querySelectorAll('[data-id]').forEach((b)=>b.onmousedown=(e)=>{e.preventDefault();pick(b.dataset.id);});
+}
+function pick(id){dd.hidden=true;q.blur();select(id,true);}
+q.addEventListener('focus',()=>{dd.hidden=false;drawDD();});
+q.addEventListener('input',()=>{hlIdx=0;drawDD();});
+q.addEventListener('blur',()=>setTimeout(()=>dd.hidden=true,120));
+q.addEventListener('keydown',(e)=>{const sel=items.filter((i)=>i.id);if(e.key==='ArrowDown'){hlIdx=Math.min(hlIdx+1,sel.length-1);drawDD();e.preventDefault();}else if(e.key==='ArrowUp'){hlIdx=Math.max(hlIdx-1,0);drawDD();e.preventDefault();}else if(e.key==='Enter'&&sel[hlIdx]){pick(sel[hlIdx].id);}else if(e.key==='Escape'){q.blur();}});
+document.addEventListener('keydown',(e)=>{if(e.key==='/'&&!e.target.matches('input,textarea')){e.preventDefault();q.focus();}});
+
+/* ── 위쪽 단추 ── */
+$('btnOverview').onclick=()=>{select(null);fit();};
+$('btnRecent').onclick=()=>{S.sel=null;S.flow=null;applySel();drawEdges();const rs=S.snap?.recent||[];const ups=Object.values(S.repos).filter((r)=>r.lastUpkeep).sort((a,b)=>b.lastUpkeep.localeCompare(a.lastUpkeep));
+  P.innerHTML=closeBtn+`<div class="kind">최근 바뀐 것</div><h2>전역 하네스 커밋 ${rs.length}개</h2>`+rs.map((r)=>`<div class="row" style="align-items:flex-start"><span class="d on" style="margin-top:6px"></span><span><b style="font-weight:600">${esc(r.title)}</b><div class="meta" style="margin-top:2px">${esc(fmt(r.date))} · ${esc(r.commit)} · 파일 ${r.files.length}개</div></span></div>`).join('')+
+  `<h3>저장소 정리</h3>${ups.map((r)=>`<div class="row"><span class="d on"></span>${esc(r.name)}<span class="r">${esc(fmt(r.lastUpkeep))}</span></div>`).join('')||'<p class="meta">아직 정리한 저장소가 없습니다</p>'}`;bindPanel();};
+$('btnProps').onclick=()=>{const n=needAnswer()[0]||liveProps()[0];if(n)select('prop:'+n.id,true);};
+
+const FLOWS=[
+  {name:'새 권장안이 저장소까지 닿는 길',desc:'권장안 → 제안(답칸에서 하자) → 전역 층 → 장치 → 저장소',build(){const r=currentRecs()[0];const ids=[];if(r){ids.push('rec:'+r.id);for(const p of propsByRec(r.id))ids.push('prop:'+p.id);for(const t of r.links||[])ids.push(t);}ids.push('g-claude','g-brief','d-session-start-brief','d-stop-check-gate');for(const s of S.snap?.repoOrder||[])ids.push('repo:'+s);return ids;}},
+  {name:'전역이 바뀐 뒤 프로젝트 정리',desc:'전역 규칙·시작 요약 → 시작 요약 훅이 «정리할 것» 알림 → 정리 스킬 → 각 저장소',build(){return ['g-claude','g-brief','g-memory','g-skills','d-session-start-brief','d-upkeep',...(S.snap?.repoOrder||[]).map((s)=>'repo:'+s)];}},
+  {name:'지도가 최신으로 유지되는 길',desc:'전역 커밋 → 끝내기 전 검사가 지도 반영을 확인 → 3일 최신화가 전부 다시 잼',build(){return ['g-claude','d-stop-check-gate','d-refresh','g-memory'];}},
+];
+$('btnFlows').onclick=(e)=>{e.stopPropagation();const f=$('flows');f.hidden=!f.hidden;f.innerHTML=FLOWS.map((x,i)=>`<button data-flow="${i}"><b>${esc(x.name)}</b><span>${esc(x.desc)}</span></button>`).join('')+'<button data-flow="-1"><span>흐름 끄기</span></button>';
+  f.querySelectorAll('[data-flow]').forEach((b)=>b.onclick=()=>{f.hidden=true;const i=Number(b.dataset.flow);if(i<0){S.flow=null;}else{S.sel=null;S.flow=FLOWS[i].build().filter((id)=>layout.nodes[id]);P.innerHTML=closeBtn+`<div class="kind">Flow</div><h2>${esc(FLOWS[i].name)}</h2><p>${esc(FLOWS[i].desc)}</p>${rowsFor(S.flow.map((id)=>{const n=layout.nodes[id];const t=n.label||n.title||n.name;return [t,'on',n._kind==='repo'?'저장소':n._kind==='device'?'장치':n._kind==='global'?'전역 층':n._kind==='rec'?'권장안':'제안',id];}))}`;bindPanel();}applySel();drawEdges();});};
+document.addEventListener('click',(e)=>{if(!e.target.closest('#flows,#btnFlows'))$('flows').hidden=true;});
+
+const TOUR=[
+  {t:'하네스 지도',p:'전역 하네스에서 정한 방식이 어디까지 실제로 돌아가는지 보는 지도입니다. 모든 색은 점검 도구가 잰 값입니다.',id:null},
+  {t:'권장안',p:'공식 문서·발표·커뮤니티가 말한 방식입니다. 현행만 지도 색에 세고, 낡은 것은 검색창 «권장안»에서 봅니다.',col:'rec'},
+  {t:'고를 제안',p:'우리 하네스를 이렇게 바꾸자는 안입니다. 카드 밑 답칸에 «하자 / 보류 / 안 함»과 조건을 적으면 바로 저장되고, 3일 예약 작업이 읽어 반영합니다.',col:'prop'},
+  {t:'전역 층',p:'모든 프로젝트의 모든 세션에 닿는 규칙·시작 요약·메모리·금지 규칙입니다.',id:'g-brief'},
+  {t:'장치',p:'규칙을 강제하거나 재는 훅·스킬·예약 작업입니다. 훅은 시험이 통과해야 «켜짐»입니다.',id:'d-session-start-brief'},
+  {t:'저장소',p:'각 프로젝트입니다. 저장소를 누르면 장치별 상태, 전역과 다르게 하는 것, 정리할 것이 보입니다.',col:'repo'},
+  {t:'실측 시각',p:'맨 위 초록 표시가 마지막 실측입니다. 3일이 넘으면 회색 «오래됨»으로 바뀝니다. 전역을 바꾼 세션은 지도를 고쳐 쓰기 전에 끝나지 않습니다.',id:null},
+];
+let ti=0;
+function drawTour(){const s=TOUR[ti];const T=$('tour');T.hidden=false;T.innerHTML=`<div class="k">Start here · ${ti+1} of ${TOUR.length}</div><h4>${esc(s.t)}</h4><p>${esc(s.p)}</p><div class="bar">${TOUR.map((_,i)=>`<i class="${i<=ti?'on':''}"></i>`).join('')}<span class="sp"></span><button class="btn ghost" id="tSkip">닫기</button> <button class="btn" id="tNext">${ti===TOUR.length-1?'끝':'다음'}</button></div>`;
+  $('tSkip').onclick=()=>{T.hidden=true;};$('tNext').onclick=()=>{if(ti===TOUR.length-1){T.hidden=true;return;}ti++;drawTour();};
+  if(s.id&&layout.nodes[s.id])select(s.id,true);else if(s.col){const first=Object.values(layout.nodes).find((n)=>n._kind===(s.col==='device'?'device':s.col));if(first)select(first.id,true);}else{select(null);fit();}}
+$('btnTour').onclick=()=>{ti=0;drawTour();};
+
+/* ── 데이터 ── */
+let raf=0;const schedule=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const first=!world.dataset.done;render();$('empty').hidden=!!S.snap;if(first&&S.snap){world.dataset.done='1';fit();}});};
+function showEmpty(msg){$('emptyMsg').innerHTML=msg;$('empty').hidden=false;$('pill').textContent='실측 없음';$('pill').className='pill stale';}
+render();fit();
+showEmpty('<b>지도를 불러오는 중입니다.</b><br>잠시 뒤에도 비어 있으면 <code>~/.claude</code>에서 <code>node tools/harness-map.mjs snapshot</code>을 돌린 세션이 지도를 쓰면 채워집니다.');
+(async()=>{
+  const use=window.claude&&window.claude.use;
+  if(!use){showEmpty('<b>이 화면에서는 지도 데이터를 읽을 수 없습니다.</b><br>claude.ai에서 이 아티팩트를 열면 실측이 보입니다.');return;}
+  const [db,user]=await Promise.all([use('db').catch(()=>null),use('user').catch(()=>null)]);
+  if(!db){showEmpty('<b>지도 데이터를 읽을 수 없습니다.</b><br>로그인한 claude.ai 화면에서 열어 주세요.');return;}
+  S.db=db;S.user=user;
+  try{const w=user&&user.can?await user.can('data.write'):null;if(w===false)S.canWrite=false;}catch(e){}
+  const err=()=>{};
+  db.doc('map/snapshot').onSnapshot((s)=>{S.snap=s.exists?s.data():null;if(!S.snap)showEmpty('<b>아직 실측이 없습니다.</b><br><code>~/.claude</code>에서 <code>node tools/harness-map.mjs snapshot</code>을 돌린 세션이 지도를 쓰면 채워집니다.');schedule();},err);
+  db.collection('repos').onSnapshot((s)=>{S.repos={};s.docs.forEach((d)=>S.repos[d.id]=d.data());schedule();},err);
+  db.collection('recs').onSnapshot((s)=>{S.recs={};s.docs.forEach((d)=>S.recs[d.id]={...d.data(),id:d.id});schedule();},err);
+  db.collection('proposals').onSnapshot((s)=>{S.props={};s.docs.forEach((d)=>S.props[d.id]={...d.data(),id:d.id});schedule();},err);
+})();
+window.addEventListener('resize',()=>{});
+})();
+</script>
